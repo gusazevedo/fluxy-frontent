@@ -39,3 +39,10 @@ export interface BalanceSummary {
   outcome: number
   balance: number
 }
+
+export interface CreateTransactionInput {
+  title: string
+  value: number
+  type: TransactionType
+  category: TransactionCategory
+}

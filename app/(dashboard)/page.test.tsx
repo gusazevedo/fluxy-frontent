@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import DashboardPage from './page'
 import type { BalanceSummary, Transaction } from '@/types'
 
@@ -21,6 +22,7 @@ vi.mock('@/lib/api/summary', () => ({
 
 vi.mock('@/lib/api/transactions', () => ({
   getTransactions: vi.fn(),
+  createTransaction: vi.fn(),
 }))
 
 vi.mock('sonner', () => ({
@@ -28,7 +30,7 @@ vi.mock('sonner', () => ({
 }))
 
 import { getBalance } from '@/lib/api/summary'
-import { getTransactions } from '@/lib/api/transactions'
+import { createTransaction, getTransactions } from '@/lib/api/transactions'
 import { toast } from 'sonner'
 import { ApiError } from '@/lib/api/client'
 
@@ -125,5 +127,118 @@ describe('DashboardPage', () => {
       expect(screen.getByText('$5,000.00')).toBeInTheDocument()
     })
     expect(mockLogout).not.toHaveBeenCalled()
+  })
+})
+
+const serverTransaction: Transaction = {
+  id: 'tx-server',
+  title: 'Freelance',
+  value: 100,
+  type: 'income',
+  category: 'Bills',
+  created_at: '2024-04-01T09:00:00Z',
+  updated_at: '2024-04-01T09:00:00Z',
+}
+
+async function openAndFillDrawer(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'New transaction' }))
+  await user.type(screen.getByLabelText('Title'), 'Freelance')
+  await user.type(screen.getByLabelText('Value'), '100')
+  await user.selectOptions(screen.getByLabelText('Type'), 'income')
+  await user.selectOptions(screen.getByLabelText('Category'), 'Bills')
+  await user.click(screen.getByRole('button', { name: 'Create' }))
+}
+
+describe('DashboardPage — create transaction', () => {
+  beforeEach(() => {
+    vi.mocked(getBalance).mockResolvedValue(sampleSummary)
+    vi.mocked(getTransactions).mockResolvedValue([])
+  })
+
+  it('optimistically shows the transaction and closes the drawer before the request resolves', async () => {
+    let resolveCreate: (t: Transaction) => void = () => {}
+    vi.mocked(createTransaction).mockReturnValue(
+      new Promise<Transaction>((resolve) => {
+        resolveCreate = resolve
+      }),
+    )
+    const user = userEvent.setup()
+    render(<DashboardPage />)
+    await waitFor(() => expect(screen.getByText('$5,000.00')).toBeInTheDocument())
+
+    await openAndFillDrawer(user)
+
+    // optimistic row is shown and the drawer has closed, before the server responds
+    await waitFor(() => {
+      expect(screen.getByText('Freelance')).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    resolveCreate(serverTransaction)
+  })
+
+  it('updates the balance summary optimistically', async () => {
+    vi.mocked(createTransaction).mockResolvedValue(serverTransaction)
+    const user = userEvent.setup()
+    render(<DashboardPage />)
+    await waitFor(() => expect(screen.getByText('+$3,679.50')).toBeInTheDocument())
+
+    await openAndFillDrawer(user)
+
+    await waitFor(() => {
+      // income 5000 + 100, balance 3679.5 + 100
+      expect(screen.getByText('$5,100.00')).toBeInTheDocument()
+      expect(screen.getByText('+$3,779.50')).toBeInTheDocument()
+    })
+  })
+
+  it('sends the typed input to createTransaction', async () => {
+    vi.mocked(createTransaction).mockResolvedValue(serverTransaction)
+    const user = userEvent.setup()
+    render(<DashboardPage />)
+    await waitFor(() => expect(screen.getByText('$5,000.00')).toBeInTheDocument())
+
+    await openAndFillDrawer(user)
+
+    await waitFor(() => {
+      expect(createTransaction).toHaveBeenCalledWith('test-token', {
+        title: 'Freelance',
+        value: 100,
+        type: 'income',
+        category: 'Bills',
+      })
+    })
+  })
+
+  it('removes the optimistic transaction and rolls back the summary on a non-401 error', async () => {
+    vi.mocked(createTransaction).mockRejectedValue(new ApiError(500, 'SERVER_ERROR', 'Boom'))
+    const user = userEvent.setup()
+    render(<DashboardPage />)
+    await waitFor(() => expect(screen.getByText('+$3,679.50')).toBeInTheDocument())
+
+    await openAndFillDrawer(user)
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'Failed to create transaction. Please try again.',
+      )
+    })
+    expect(screen.queryByText('Freelance')).not.toBeInTheDocument()
+    // summary restored to original values
+    expect(screen.getByText('$5,000.00')).toBeInTheDocument()
+    expect(screen.getByText('+$3,679.50')).toBeInTheDocument()
+  })
+
+  it('calls logout on a 401 error from createTransaction', async () => {
+    vi.mocked(createTransaction).mockRejectedValue(
+      new ApiError(401, 'UNAUTHORIZED', 'Bad token'),
+    )
+    const user = userEvent.setup()
+    render(<DashboardPage />)
+    await waitFor(() => expect(screen.getByText('$5,000.00')).toBeInTheDocument())
+
+    await openAndFillDrawer(user)
+
+    await waitFor(() => expect(mockLogout).toHaveBeenCalled())
   })
 })
