@@ -1,0 +1,81 @@
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import type { Transaction } from '@/types'
+import { getTransactions } from './transactions'
+
+const sample: Transaction = {
+  id: 'tx-1',
+  title: 'Gym membership',
+  value: 89.9,
+  type: 'outcome',
+  category: 'Gym',
+  created_at: '2024-03-15T12:00:00Z',
+  updated_at: '2024-03-15T12:00:00Z',
+}
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+describe('getTransactions', () => {
+  it('returns the array of transactions on 200', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => [sample],
+      }),
+    )
+    const result = await getTransactions('token-123')
+    expect(result).toEqual([sample])
+  })
+
+  it('returns an empty array when user has no transactions', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => [],
+      }),
+    )
+    expect(await getTransactions('token-123')).toEqual([])
+  })
+
+  it('sends Authorization header with Bearer token', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    await getTransactions('token-123')
+    const [, options] = fetchMock.mock.calls[0]
+    expect(options.headers.Authorization).toBe('Bearer token-123')
+  })
+
+  it('calls the /transactions endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    await getTransactions('t')
+    const [url] = fetchMock.mock.calls[0]
+    expect(url).toContain('/transactions')
+  })
+
+  it('throws ApiError on 401', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ code: 'UNAUTHORIZED', message: 'Bad token' }),
+      }),
+    )
+    await expect(getTransactions('bad')).rejects.toMatchObject({ status: 401 })
+  })
+})
