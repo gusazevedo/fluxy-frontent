@@ -15,6 +15,10 @@ function is401(reason: unknown) {
   return reason instanceof ApiError && reason.status === 401
 }
 
+function isValidIso(value: string | undefined): value is string {
+  return typeof value === 'string' && !Number.isNaN(new Date(value).getTime())
+}
+
 function adjustSummary(
   summary: BalanceSummary,
   input: CreateTransactionInput,
@@ -110,7 +114,13 @@ export default function DashboardPage() {
 
     try {
       const created = await createTransaction(accessToken, input)
-      setTransactions((prev) => prev.map((t) => (t.id === optimistic.id ? created : t)))
+      const merged: Transaction = {
+        ...optimistic,
+        ...created,
+        created_at: isValidIso(created.created_at) ? created.created_at : optimistic.created_at,
+        updated_at: isValidIso(created.updated_at) ? created.updated_at : optimistic.updated_at,
+      }
+      setTransactions((prev) => prev.map((t) => (t.id === optimistic.id ? merged : t)))
     } catch (err) {
       if (is401(err)) {
         logout()

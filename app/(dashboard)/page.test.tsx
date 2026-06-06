@@ -229,6 +229,32 @@ describe('DashboardPage — create transaction', () => {
     expect(screen.getByText('+$3,679.50')).toBeInTheDocument()
   })
 
+  it('keeps a valid date when the server response omits created_at', async () => {
+    // Real POST /transactions can return a transaction without a usable
+    // created_at; formatDate must never receive an invalid date.
+    const serverWithoutDate = {
+      id: 'tx-server',
+      title: 'Freelance',
+      value: 100,
+      type: 'income',
+      category: 'Bills',
+    } as unknown as Transaction
+    vi.mocked(createTransaction).mockResolvedValue(serverWithoutDate)
+    const user = userEvent.setup()
+    render(<DashboardPage />)
+    await waitFor(() => expect(screen.getByText('$5,000.00')).toBeInTheDocument())
+
+    await openAndFillDrawer(user)
+
+    await waitFor(() => {
+      expect(createTransaction).toHaveBeenCalled()
+      expect(screen.getByText('Freelance')).toBeInTheDocument()
+    })
+    // No DateTimeFormat crash, and a real date is shown (today's date label).
+    const today = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date())
+    expect(screen.getByText(today)).toBeInTheDocument()
+  })
+
   it('calls logout on a 401 error from createTransaction', async () => {
     vi.mocked(createTransaction).mockRejectedValue(
       new ApiError(401, 'UNAUTHORIZED', 'Bad token'),
