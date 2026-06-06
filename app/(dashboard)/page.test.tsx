@@ -135,17 +135,17 @@ const serverTransaction: Transaction = {
   title: 'Freelance',
   value: 100,
   type: 'income',
-  category: 'Bills',
+  category: 'Salary',
   created_at: '2024-04-01T09:00:00Z',
   updated_at: '2024-04-01T09:00:00Z',
 }
 
+// Income locks the category to Salary, so the helper never touches it.
 async function openAndFillDrawer(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'New transaction' }))
   await user.type(screen.getByLabelText('Title'), 'Freelance')
   await user.type(screen.getByLabelText('Value'), '100')
   await user.selectOptions(screen.getByLabelText('Type'), 'income')
-  await user.selectOptions(screen.getByLabelText('Category'), 'Bills')
   await user.click(screen.getByRole('button', { name: 'Create' }))
 }
 
@@ -205,7 +205,7 @@ describe('DashboardPage — create transaction', () => {
         title: 'Freelance',
         value: 100,
         type: 'income',
-        category: 'Bills',
+        category: 'Salary',
       })
     })
   })
@@ -237,7 +237,7 @@ describe('DashboardPage — create transaction', () => {
       title: 'Freelance',
       value: 100,
       type: 'income',
-      category: 'Bills',
+      category: 'Salary',
     } as unknown as Transaction
     vi.mocked(createTransaction).mockResolvedValue(serverWithoutDate)
     const user = userEvent.setup()

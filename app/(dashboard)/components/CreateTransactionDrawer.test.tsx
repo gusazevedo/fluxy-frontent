@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, cleanup } from '@testing-library/react'
+import { render, screen, waitFor, cleanup, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { CreateTransactionDrawer } from './CreateTransactionDrawer'
+import { CreateTransactionDrawer, createTransactionSchema } from './CreateTransactionDrawer'
 
 function setup(open = true) {
   const onClose = vi.fn()
@@ -72,10 +72,10 @@ describe('CreateTransactionDrawer', () => {
   it('rejects a value of zero or below', async () => {
     const user = userEvent.setup()
     const { onCreate } = setup()
-    await user.type(screen.getByLabelText('Title'), 'Salary')
+    await user.type(screen.getByLabelText('Title'), 'Groceries')
     await user.type(screen.getByLabelText('Value'), '0')
-    await user.selectOptions(screen.getByLabelText('Type'), 'income')
-    await user.selectOptions(screen.getByLabelText('Category'), 'Bills')
+    await user.selectOptions(screen.getByLabelText('Type'), 'outcome')
+    await user.selectOptions(screen.getByLabelText('Category'), 'Food')
     await user.click(screen.getByRole('button', { name: 'Create' }))
     expect(await screen.findByText('Value must be greater than 0')).toBeInTheDocument()
     expect(onCreate).not.toHaveBeenCalled()
@@ -96,6 +96,115 @@ describe('CreateTransactionDrawer', () => {
         type: 'outcome',
         category: 'Gym',
       })
+    })
+  })
+
+  describe('type/category coupling', () => {
+    it('disables the category field until a type is selected', () => {
+      setup()
+      expect(screen.getByLabelText('Category')).toBeDisabled()
+    })
+
+    it('offers exactly the seven expense categories (no Salary) for outcome', async () => {
+      const user = userEvent.setup()
+      setup()
+      await user.selectOptions(screen.getByLabelText('Type'), 'outcome')
+      const category = screen.getByLabelText('Category')
+      expect(category).toBeEnabled()
+      const options = within(category).getAllByRole('option').map((o) => o.textContent)
+      expect(options).toEqual([
+        'Select a category',
+        'Bills',
+        'Health',
+        'Gym',
+        'Subscriptions',
+        'Food',
+        'Entertainment',
+        'Transport',
+      ])
+      expect(options).not.toContain('Salary')
+    })
+
+    it('locks the category to Salary when type is income', async () => {
+      const user = userEvent.setup()
+      setup()
+      await user.selectOptions(screen.getByLabelText('Type'), 'income')
+      const category = screen.getByLabelText('Category')
+      await waitFor(() => expect(category).toBeDisabled())
+      expect(category).toHaveValue('Salary')
+      expect(within(category).getAllByRole('option').map((o) => o.textContent)).toEqual([
+        'Salary',
+      ])
+    })
+
+    it('clears the category when switching from income back to outcome', async () => {
+      const user = userEvent.setup()
+      setup()
+      await user.selectOptions(screen.getByLabelText('Type'), 'income')
+      await waitFor(() => expect(screen.getByLabelText('Category')).toHaveValue('Salary'))
+      await user.selectOptions(screen.getByLabelText('Type'), 'outcome')
+      const category = screen.getByLabelText('Category')
+      await waitFor(() => expect(category).toBeEnabled())
+      expect(category).toHaveValue('')
+    })
+
+    it('submits Salary for an income transaction without touching the category field', async () => {
+      const user = userEvent.setup()
+      const { onCreate } = setup()
+      await user.type(screen.getByLabelText('Title'), 'June paycheck')
+      await user.type(screen.getByLabelText('Value'), '4200')
+      await user.selectOptions(screen.getByLabelText('Type'), 'income')
+      await user.click(screen.getByRole('button', { name: 'Create' }))
+      await waitFor(() => {
+        expect(onCreate).toHaveBeenCalledWith({
+          title: 'June paycheck',
+          value: 4200,
+          type: 'income',
+          category: 'Salary',
+        })
+      })
+    })
+  })
+
+  describe('schema coupling rule', () => {
+    const base = { title: 'x', value: 10 }
+
+    it('accepts income + Salary', () => {
+      expect(
+        createTransactionSchema.safeParse({ ...base, type: 'income', category: 'Salary' }).success,
+      ).toBe(true)
+    })
+
+    it('accepts outcome + an expense category', () => {
+      expect(
+        createTransactionSchema.safeParse({ ...base, type: 'outcome', category: 'Food' }).success,
+      ).toBe(true)
+    })
+
+    it('rejects income + a non-Salary category', () => {
+      const result = createTransactionSchema.safeParse({
+        ...base,
+        type: 'income',
+        category: 'Bills',
+      })
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        const issue = result.error.issues.find((i) => i.path[0] === 'category')
+        expect(issue?.message).toBe('Income must use the Salary category')
+      }
+    })
+
+    it('rejects outcome + Salary', () => {
+      const result = createTransactionSchema.safeParse({
+        ...base,
+        type: 'outcome',
+        category: 'Salary',
+      })
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        const issue = result.error.issues.find((i) => i.path[0] === 'category')
+        expect(issue?.message).toBe('Salary can only be used with income')
+      }
     })
   })
 })

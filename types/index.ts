@@ -23,6 +23,7 @@ export type TransactionCategory =
   | 'Food'
   | 'Entertainment'
   | 'Transport'
+  | 'Salary'
 
 export interface Transaction {
   id: string
