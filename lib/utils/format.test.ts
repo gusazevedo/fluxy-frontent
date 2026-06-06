@@ -34,4 +34,14 @@ describe('formatDate', () => {
   it('returns a non-empty string for a valid ISO string', () => {
     expect(formatDate('2024-01-01T12:00:00Z')).toBeTruthy()
   })
+
+  it('returns an empty string instead of throwing for missing/invalid input', () => {
+    expect(formatDate(undefined as unknown as string)).toBe('')
+    expect(formatDate('')).toBe('')
+    expect(formatDate('not-a-date')).toBe('')
+  })
+
+  it('parses a numeric epoch (seconds) string', () => {
+    expect(formatDate('1710504000')).toContain('2024')
+  })
 })

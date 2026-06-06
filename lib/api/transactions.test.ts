@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { CreateTransactionInput, Transaction } from '@/types'
 import { createTransaction, getTransactions } from './transactions'
 
+// Domain shape used across the app.
 const sample: Transaction = {
   id: 'tx-1',
   title: 'Gym membership',
@@ -12,22 +13,37 @@ const sample: Transaction = {
   updated_at: '2024-03-15T12:00:00Z',
 }
 
+// Exactly what the backend returns: camelCase keys, value as a string,
+// plus an extra userId field.
+const sampleDTO = {
+  id: 'tx-1',
+  userId: 'user-1',
+  title: 'Gym membership',
+  value: '89.90',
+  type: 'outcome',
+  category: 'Gym',
+  createdAt: '2024-03-15T12:00:00Z',
+  updatedAt: '2024-03-15T12:00:00Z',
+}
+
 afterEach(() => {
   vi.restoreAllMocks()
 })
 
 describe('getTransactions', () => {
-  it('returns the array of transactions on 200', async () => {
+  it('maps the backend DTO (camelCase, string value) to the domain shape', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => [sample],
+        json: async () => [sampleDTO],
       }),
     )
     const result = await getTransactions('token-123')
     expect(result).toEqual([sample])
+    expect(result[0].value).toBe(89.9)
+    expect(result[0].created_at).toBe('2024-03-15T12:00:00Z')
   })
 
   it('returns an empty array when user has no transactions', async () => {
@@ -88,24 +104,26 @@ const createInput: CreateTransactionInput = {
 }
 
 describe('createTransaction', () => {
-  it('returns the created transaction on 201', async () => {
+  it('maps the created DTO to the domain shape on 201', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
         status: 201,
-        json: async () => sample,
+        json: async () => sampleDTO,
       }),
     )
     const result = await createTransaction('token-123', createInput)
     expect(result).toEqual(sample)
+    expect(result.value).toBe(89.9)
+    expect(result.created_at).toBe('2024-03-15T12:00:00Z')
   })
 
   it('POSTs to /transactions with the input as JSON body and Bearer token', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 201,
-      json: async () => sample,
+      json: async () => sampleDTO,
     })
     vi.stubGlobal('fetch', fetchMock)
     await createTransaction('token-123', createInput)
