@@ -31,19 +31,29 @@ Creates a transaction for the authenticated user.
 
 `TransactionCategory` is one of: `Bills`, `Health`, `Gym`, `Subscriptions`, `Food`, `Entertainment`, `Transport` (defined in `spec/02-dashboard.md`).
 
-**Response 201** — the created `Transaction`:
+**Response 201** — the created transaction.
 
-```ts
-{
-  id: string         // UUID
-  title: string
-  value: number
-  type: 'income' | 'outcome'
-  category: TransactionCategory
-  created_at: string // ISO 8601
-  updated_at: string // ISO 8601
-}
-```
+> **The live API does not match its OpenAPI docs.** The real response uses
+> **camelCase** keys, returns `value` as a **string**, and includes an extra
+> `userId`. The actual body is:
+>
+> ```ts
+> {
+>   id: string          // UUID
+>   userId: string
+>   title: string
+>   value: string       // decimal string, e.g. "10.00"
+>   type: 'income' | 'outcome'
+>   category: TransactionCategory
+>   createdAt: string   // ISO 8601
+>   updatedAt: string   // ISO 8601
+> }
+> ```
+>
+> This must be mapped to the domain `Transaction` (snake_case keys, numeric
+> `value`) at the API boundary — see **API Helper** below. The same mapping
+> applies to `GET /transactions`. Reading `created_at` directly off this
+> response yields `undefined`, which crashes `formatDate`.
 
 **Response 401:** token missing or expired → call `logout()` (clears tokens, redirects to `/login`).
 
@@ -86,7 +96,16 @@ Calls `POST /transactions` via `apiRequest` with:
 - `body: input`
 - `headers: { Authorization: \`Bearer ${token}\` }`
 
-Returns the created `Transaction` from the 201 response. Errors propagate as `ApiError` (handled by the caller).
+The 201 response is the backend wire DTO (camelCase, string `value`; see
+**Response 201**). A `toTransaction` mapper converts it to the domain
+`Transaction` before returning:
+
+- `createdAt` → `created_at`, `updatedAt` → `updated_at`
+- `value` (string) → `Number(value)`
+- `userId` is dropped
+
+The same mapper is applied to every item from `getTransactions`. Errors
+propagate as `ApiError` (handled by the caller).
 
 ---
 
