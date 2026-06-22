@@ -3,6 +3,13 @@ import "server-only";
 import { cookies } from "next/headers";
 import { getApiBaseUrl } from "@/lib/config";
 import type { TokenPair } from "@/lib/api/types";
+import {
+  ACCESS_COOKIE,
+  REFRESH_COOKIE,
+  sessionCookieOptions,
+} from "./constants";
+
+export { decodeJwtExp, isAccessExpired } from "./jwt";
 
 /**
  * Gestão de sessão via cookies httpOnly server-side (arquitetura BFF).
@@ -13,19 +20,6 @@ import type { TokenPair } from "@/lib/api/types";
  * permitida em Server Actions / Route Handlers / proxy (não no render de
  * Server Components); por isso o refresh proativo vive no proxy.ts.
  */
-
-const ACCESS_COOKIE = "fluxy_access";
-const REFRESH_COOKIE = "fluxy_refresh";
-
-// Refresh token TTL no backend é 30 dias (0004 §1).
-const REFRESH_MAX_AGE = 60 * 60 * 24 * 30;
-
-const baseCookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  path: "/",
-};
 
 export async function getAccessToken(): Promise<string | undefined> {
   return (await cookies()).get(ACCESS_COOKIE)?.value;
@@ -42,14 +36,9 @@ export async function hasSession(): Promise<boolean> {
 /** Persiste um novo par de tokens nos cookies httpOnly. */
 export async function setSession(tokens: TokenPair): Promise<void> {
   const store = await cookies();
-  store.set(ACCESS_COOKIE, tokens.accessToken, {
-    ...baseCookieOptions,
-    maxAge: REFRESH_MAX_AGE, // a validade real do access é o exp do JWT
-  });
-  store.set(REFRESH_COOKIE, tokens.refreshToken, {
-    ...baseCookieOptions,
-    maxAge: REFRESH_MAX_AGE,
-  });
+  const opts = sessionCookieOptions();
+  store.set(ACCESS_COOKIE, tokens.accessToken, opts);
+  store.set(REFRESH_COOKIE, tokens.refreshToken, opts);
 }
 
 /** Limpa a sessão local (logout / sessão revogada). */
@@ -57,27 +46,6 @@ export async function clearSession(): Promise<void> {
   const store = await cookies();
   store.delete(ACCESS_COOKIE);
   store.delete(REFRESH_COOKIE);
-}
-
-/** Decodifica o `exp` (epoch s) de um JWT sem verificar a assinatura. */
-export function decodeJwtExp(token: string): number | null {
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  try {
-    const payload = JSON.parse(
-      Buffer.from(parts[1], "base64url").toString("utf8"),
-    ) as { exp?: number };
-    return typeof payload.exp === "number" ? payload.exp : null;
-  } catch {
-    return null;
-  }
-}
-
-/** True se o access token está expirado (ou prestes a, com folga de skew). */
-export function isAccessExpired(token: string, skewSeconds = 30): boolean {
-  const exp = decodeJwtExp(token);
-  if (exp === null) return true;
-  return Date.now() / 1000 >= exp - skewSeconds;
 }
 
 // Serializa o refresh: várias chamadas 401 concorrentes reusam um único
