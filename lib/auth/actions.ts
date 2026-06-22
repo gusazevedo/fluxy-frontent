@@ -7,25 +7,13 @@ import { messageForError } from "@/lib/api/error-messages";
 import type { TokenPair, ValidationDetail } from "@/lib/api/types";
 import { setSession, clearSession, getRefreshToken } from "./session";
 import { validateEmail, validatePassword } from "./validation";
+import type { AuthState } from "./form-state";
 
 /**
  * Server Actions dos fluxos de autenticação (front-specs/0003 §3, 0004 §4).
  * Todas executam no servidor; rotas públicas usam `auth: false`.
- *
- * Estado padrão para `useActionState` nos formulários.
+ * O estado (`AuthState`/`initialAuthState`) vive em ./form-state.
  */
-export interface AuthState {
-  status: "idle" | "error" | "success";
-  message?: string;
-  /** Erros por campo (de VALIDATION_ERROR ou validação local). */
-  fieldErrors?: Record<string, string>;
-  /** Código do erro da API — permite à UI reagir (ex.: oferecer reenvio). */
-  code?: string;
-  /** Eco do e-mail para fluxos de reenvio. */
-  email?: string;
-}
-
-export const initialAuthState: AuthState = { status: "idle" };
 
 /** Mapeia `details` de VALIDATION_ERROR (paths tipo "/email") para campos. */
 function fieldErrorsFromDetails(

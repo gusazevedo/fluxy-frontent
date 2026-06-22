@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { resetPasswordAction, initialAuthState } from "@/lib/auth/actions";
+import { resetPasswordAction } from "@/lib/auth/actions";
+import { initialAuthState } from "@/lib/auth/form-state";
 import { SubmitButton, TextField, Alert } from "@/components/ui/form";
 
 export function ResetPasswordForm({ token }: { token?: string }) {

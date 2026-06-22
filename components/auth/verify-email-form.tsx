@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { verifyEmailAction, initialAuthState } from "@/lib/auth/actions";
+import { verifyEmailAction } from "@/lib/auth/actions";
+import { initialAuthState } from "@/lib/auth/form-state";
 import { SubmitButton, Alert } from "@/components/ui/form";
 
 export function VerifyEmailForm({ token }: { token?: string }) {

@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { forgotPasswordAction, initialAuthState } from "@/lib/auth/actions";
+import { forgotPasswordAction } from "@/lib/auth/actions";
+import { initialAuthState } from "@/lib/auth/form-state";
 import { SubmitButton, TextField, Alert } from "@/components/ui/form";
 
 export function ForgotPasswordForm() {
