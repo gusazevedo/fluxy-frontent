@@ -2,11 +2,8 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import {
-  loginAction,
-  resendVerificationAction,
-  initialAuthState,
-} from "@/lib/auth/actions";
+import { loginAction, resendVerificationAction } from "@/lib/auth/actions";
+import { initialAuthState } from "@/lib/auth/form-state";
 import { SubmitButton, TextField, Alert } from "@/components/ui/form";
 
 export function LoginForm({ notice }: { notice?: string }) {
