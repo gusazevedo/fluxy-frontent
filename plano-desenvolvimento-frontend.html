@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roteiro de Desenvolvimento SDD — Frontend do Fluxy</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --surface-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e6e9ef;
+    --muted: #9aa3b2;
+    --accent: #5b8cff;
+    --accent-soft: rgba(91,140,255,.14);
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --code-bg: #11141a;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+  header.hero {
+    background: linear-gradient(160deg, #1a2030, #12141a);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 40px;
+    margin-bottom: 40px;
+  }
+  header.hero h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -.5px; }
+  header.hero p.sub { color: var(--muted); margin: 0 0 20px; font-size: 17px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid rgba(91,140,255,.3);
+    padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  }
+  .pill.alt { background: rgba(74,222,128,.12); color: var(--green); border-color: rgba(74,222,128,.3); }
+
+  nav.toc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 24px; margin-bottom: 40px;
+  }
+  nav.toc h2 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav.toc li { margin-bottom: 6px; break-inside: avoid; }
+  nav.toc a { color: var(--text); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+
+  section.block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px 32px; margin-bottom: 24px;
+  }
+  section.block > h2 {
+    margin: 0 0 4px; font-size: 22px; letter-spacing: -.3px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .phase-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 38px; height: 38px; padding: 0 10px;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid rgba(91,140,255,.3);
+    border-radius: 10px; font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+  .origem {
+    color: var(--muted); font-size: 13px; margin: 2px 0 18px;
+    padding-left: 50px;
+  }
+  .origem code { font-size: 12px; }
+
+  h3 { font-size: 15px; margin: 22px 0 10px; color: var(--accent); letter-spacing: .2px; }
+  ul, ol.steps { margin: 0 0 4px; padding-left: 22px; }
+  li { margin-bottom: 8px; }
+  li > ul { margin-top: 8px; }
+  p { margin: 0 0 14px; }
+  code {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 6px; font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13.5px; color: #cfd6e4;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; overflow-x: auto; margin: 12px 0;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: 13px; }
+
+  .accept {
+    background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.25);
+    border-radius: 10px; padding: 14px 18px; margin-top: 18px;
+  }
+  .accept strong { color: var(--green); }
+
+  .callout {
+    border-left: 4px solid var(--amber);
+    background: rgba(251,191,36,.08);
+    padding: 12px 18px; border-radius: 0 10px 10px 0; margin: 16px 0;
+  }
+  .callout strong { color: var(--amber); }
+
+  .decisions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 18px 0; }
+  .decision {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .decision .k { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  .decision .v { font-weight: 600; margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+
+  .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 6px; font-weight: 600; }
+  .tag.read { background: rgba(91,140,255,.15); color: var(--accent); }
+  .tag.write { background: rgba(251,191,36,.15); color: var(--amber); }
+  .tag.lock { background: rgba(248,113,113,.15); color: var(--red); }
+
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 48px; }
+  a.back { color: var(--muted); font-size: 12px; text-decoration: none; float: right; }
+  a.back:hover { color: var(--accent); }
+
+  @media (max-width: 780px) {
+    .decisions { grid-template-columns: 1fr; }
+    nav.toc ol { columns: 1; }
+    .wrap { padding: 24px 14px 64px; }
+    section.block { padding: 22px 18px; }
+    .origem { padding-left: 0; }
+  }
+  @media print {
+    body { background: #fff; color: #111; }
+    section.block, header.hero, nav.toc, .decision { border-color: #ccc; background: #fff; }
+    .pill, .phase-num { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>Roteiro de Desenvolvimento SDD — Frontend do Fluxy</h1>
+    <p class="sub">Spec-Driven Development derivado das specs <code>front-specs/0001…0006</code>. A API é a fonte da verdade (P1/SSD): o frontend respeita as regras do backend, nunca as reimplementa.</p>
+    <div class="pills">
+      <span class="pill">Next.js 16.2.9 · App Router</span>
+      <span class="pill">React 19</span>
+      <span class="pill">TypeScript</span>
+      <span class="pill">Tailwind v4</span>
+      <span class="pill alt">BFF / cookies httpOnly</span>
+      <span class="pill alt">Server Components + Server Actions</span>
+    </div>
+  </header>
+
+  <section class="block" id="contexto">
+    <h2><span class="phase-num">i</span> Contexto</h2>
+    <div class="origem">Por que este roteiro existe e quais decisões o guiam.</div>
+    <p>O Fluxy é um app de finanças pessoais cujo <strong>frontend ainda não foi construído</strong>: o repositório é um <code>create-next-app</code> praticamente limpo, com pastas vazias <code>lib/api</code>, <code>lib/auth</code>, <code>components/auth</code>. As 6 specs em <code>front-specs/</code> definem um <strong>contrato de API completo e fechado</strong> (modelos, endpoints, auth/sessão, regras de negócio, catálogo de erros), mas <strong>deliberadamente não definem a UI</strong> ("a UI será definida posteriormente").</p>
+    <p>Cada fase abaixo aponta a spec de origem, o que entregar e os critérios de aceite — construção incremental dirigida pelas specs.</p>
+
+    <h3>Decisões de arquitetura (confirmadas)</h3>
+    <div class="decisions">
+      <div class="decision"><div class="k">Comunicação & tokens</div><div class="v">BFF / proxy no Next; access &amp; refresh em cookies httpOnly server-side</div></div>
+      <div class="decision"><div class="k">Dados & estado</div><div class="v">Server Components (leitura) + Server Actions (mutação), revalidatePath/Tag</div></div>
+      <div class="decision"><div class="k">UI</div><div class="v">Funcional mínima + Tailwind; design visual fica para fase posterior</div></div>
+    </div>
+    <div class="callout">
+      <strong>⚠️ Divergência intencional com a spec 0004 §1</strong> — ela descreve o token "guardado pelo web app" sem cookie httpOnly. Isso é a <em>decisão do backend</em> sobre como <em>entrega</em> o token; o frontend pode, com mais segurança, encapsular o refresh num BFF. <strong>Não muda o contrato da API.</strong> O <code>.env.example</code> já usa <code>API_BASE_URL</code> server-only (sem <code>NEXT_PUBLIC_</code>), o que confirma esse caminho. Se algo conflitar com o backend durante a implementação, <strong>parar e consultar</strong> (regra SSD).
+    </div>
+
+    <h3>Regra obrigatória do projeto (AGENTS.md)</h3>
+    <p>Esta versão do Next tem breaking changes. <strong>Antes de escrever cada peça</strong>, ler o guia correspondente em <code>node_modules/next/dist/docs/01-app/</code>. Guias-chave já localizados:</p>
+    <ul>
+      <li><code>02-guides/backend-for-frontend.md</code> — padrão BFF</li>
+      <li><code>02-guides/authentication.md</code> · <code>02-guides/data-security.md</code> — sessão, cookies, <code>server-only</code></li>
+      <li><code>01-getting-started/07-mutating-data.md</code> — Server Actions</li>
+      <li><code>01-getting-started/08-caching.md</code> · <code>02-guides/how-revalidation-works.md</code> — revalidação</li>
+      <li><code>01-getting-started/15-route-handlers.md</code> — Route Handlers (proxy)</li>
+      <li><code>02-guides/forms.md</code> · <code>02-guides/redirecting.md</code> · <code>02-guides/environment-variables.md</code></li>
+    </ul>
+  </section>
+
+  <nav class="toc">
+    <h2>Fases</h2>
+    <ol>
+      <li><a href="#fase0">Fundação do projeto e contrato de tipos</a></li>
+      <li><a href="#fase1">Cliente HTTP, sessão e tratamento de erros</a></li>
+      <li><a href="#fase2">Autenticação e deep-links de e-mail</a></li>
+      <li><a href="#fase3">Conta atual e shell autenticado</a></li>
+      <li><a href="#fase4">Categorias (CRUD + arquivamento)</a></li>
+      <li><a href="#fase5">Transações (CRUD, filtros, cursor)</a></li>
+      <li><a href="#fase6">Relatórios (resumo do período)</a></li>
+      <li><a href="#fase7">Endurecimento e checklist final</a></li>
+      <li><a href="#arquivos">Arquivos críticos &amp; padrões</a></li>
+      <li><a href="#verificacao">Verificação end-to-end</a></li>
+    </ol>
+  </nav>
+
+  <!-- FASE 0 -->
+  <section class="block" id="fase0">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">0</span> Fundação do projeto e contrato de tipos</h2>
+    <div class="origem"><strong>Origem:</strong> 0001 (stack/princípios), 0002 (modelos), 0006 (envelope de erro).</div>
+    <ul>
+      <li><code>lib/api/types.ts</code> — DTOs e enums <strong>literais da spec 0002</strong>: <code>Kind</code>, <code>Me</code>, <code>Category</code>, <code>Transaction</code>, <code>TokenPair</code>, <code>MessageResponse</code>, <code>Summary</code>, <code>TransactionPage</code>. Mais o envelope <code>{ error: { statusCode, code, message, details? } }</code> (0006 §1) e um union <code>ApiErrorCode</code> com todos os <code>code</code> do catálogo (0006 §2).</li>
+      <li><code>lib/config.ts</code> — leitura de <code>API_BASE_URL</code> (server-only) com validação no boot; <code>import "server-only"</code>.</li>
+      <li><code>lib/money.ts</code> — utilidades de dinheiro (0002 §3): <code>formatBRL(cents)</code> via <code>Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' })</code> e <code>parseBRLToCents(input)</code>. Somar <strong>sempre em centavos inteiros</strong>.</li>
+      <li><code>lib/date.ts</code> — helpers <code>YYYY-MM-DD</code> para <code>occurredAt</code>/<code>from</code>/<code>to</code> (data pura, sem fuso) vs ISO de <code>createdAt</code> (0002 §4). Default do período = mês corrente (0005 RN-Rep-2).</li>
+      <li>Limpar boilerplate de <code>app/page.tsx</code>/<code>app/layout.tsx</code> e ajustar <code>.env.example</code>/<code>.env.local</code>.</li>
+    </ul>
+    <div class="accept"><strong>Aceite:</strong> <code>npm run build</code> e <code>npm run lint</code> passam; tipos compilam; <code>formatBRL(1250)</code> → <code>"R$ 12,50"</code>; <code>parseBRLToCents("12,50")</code> → <code>1250</code>.</div>
+  </section>
+
+  <!-- FASE 1 -->
+  <section class="block" id="fase1">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">1</span> Cliente HTTP, sessão (cookies httpOnly) e tratamento de erros</h2>
+    <div class="origem"><strong>Origem:</strong> 0003 §1 (base/headers/rate limit), 0004 (tokens/sessão/rotação), 0006 (erros).</div>
+    <ul>
+      <li><code>lib/api/client.ts</code> (server-only) — <code>fetch</code> para <code>API_BASE_URL</code> que injeta <code>Authorization: Bearer &lt;access&gt;</code> (do cookie), faz <strong>parse do envelope de erro</strong> e lança um <code>ApiError</code> tipado com <code>.code</code>/<code>.statusCode</code>/<code>.details</code>.</li>
+      <li><code>lib/auth/session.ts</code> — leitura/escrita dos cookies httpOnly <code>access</code>/<code>refresh</code> (<code>Secure</code>, <code>SameSite=Lax</code>) via <code>cookies()</code> do Next; helpers <code>getSession</code>, <code>setSession(tokenPair)</code>, <code>clearSession</code>.</li>
+      <li><strong>Refresh com rotação serializada (0004 §2):</strong> ao receber <code>401 UNAUTHORIZED</code> numa rota <span class="tag lock">🔒</span>, chamar <code>POST /auth/refresh</code> <strong>uma vez</strong>, trocar <strong>os dois</strong> tokens e repetir a chamada. Serializar para evitar corrida (rotação invalida par emitido em paralelo). Em <code>TOKEN_INVALID</code>/<code>TOKEN_EXPIRED</code> no refresh → <code>clearSession</code> + redirect a <code>/login</code>.</li>
+      <li><strong>Eventos que invalidam todas as sessões</strong> (reset-password, change-password, reuso de refresh): limpar sessão local e redirecionar ao login (0004 §3).</li>
+      <li><code>lib/api/error-messages.ts</code> — mapa <code>code → mensagem PT-BR</code> (0006 §3.6: reagir pelo <code>code</code>, mensagem própria, não a <code>message</code> em inglês).</li>
+      <li>Tratar <code>429</code> (backoff/feedback) e <code>5xx</code>/rede (transitório, permitir retry, <strong>não</strong> deslogar).</li>
+    </ul>
+    <div class="accept"><strong>Aceite:</strong> uma chamada <span class="tag lock">🔒</span> com access expirado dispara refresh e repete sozinha; refresh inválido desloga; <code>ApiError.code</code> disponível para a UI; mensagens PT-BR por código.</div>
+  </section>
+
+  <!-- FASE 2 -->
+  <section class="block" id="fase2">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">2</span> Autenticação e rotas de deep-link de e-mail</h2>
+    <div class="origem"><strong>Origem:</strong> 0003 §3, 0004 §4–§6, 0005 §1 (validações), 0006 (erros de auth).</div>
+    <h3>Server Actions — <code>lib/auth/actions.ts</code></h3>
+    <p><code>register</code>, <code>login</code>, <code>logout</code>, <code>forgotPassword</code>, <code>resetPassword</code>, <code>verifyEmail</code>, <code>resendVerification</code>, <code>changePassword</code>. Cada uma chama o endpoint correspondente; no login, grava cookies.</p>
+    <h3>Rotas / telas (App Router, UI mínima)</h3>
+    <ul>
+      <li><code>app/(auth)/login</code> — tratar <code>INVALID_CREDENTIALS</code> (401) e <code>EMAIL_NOT_VERIFIED</code> (403 → oferecer "reenviar verificação").</li>
+      <li><code>app/(auth)/register</code> — resposta <strong>genérica</strong> (não revela e-mail existente).</li>
+      <li><code>app/(auth)/forgot-password</code> — sempre confirma genericamente.</li>
+      <li><strong><code>app/verify-email</code></strong> — lê <code>?token=</code> e chama <code>POST /auth/verify-email</code> (deep-link obrigatório — 0004 §5).</li>
+      <li><strong><code>app/reset-password</code></strong> — lê <code>?token=</code> e chama <code>POST /auth/reset-password</code> (deep-link obrigatório — 0004 §5).</li>
+      <li><code>app/(app)/account/change-password</code> — após sucesso, <strong>deslogar</strong> (todas as sessões revogadas — 0004 §4.5).</li>
+    </ul>
+    <h3>Validação de UX espelhando a spec</h3>
+    <p>Validação final é do servidor. E-mail <code>algo@algo.dominio</code> ≤ 320; senha 8..200 sem complexidade obrigatória (0004 §6 / 0005 §1). Usar <code>details</code> do <code>VALIDATION_ERROR</code> para marcar campos.</p>
+    <h3>Proteção de rotas</h3>
+    <p>Middleware/layout que exige sessão para o grupo <code>(app)</code> e redireciona não autenticado para <code>/login</code>.</p>
+    <div class="accept"><strong>Aceite:</strong> fluxo cadastro→verificação→login funciona ponta a ponta contra o backend local (<code>http://localhost:3333</code>); deep-links <code>/verify-email?token=</code> e <code>/reset-password?token=</code> funcionam; login bloqueia e-mail não verificado oferecendo reenvio; change-password desloga.</div>
+  </section>
+
+  <!-- FASE 3 -->
+  <section class="block" id="fase3">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">3</span> Conta atual e shell autenticado</h2>
+    <div class="origem"><strong>Origem:</strong> 0003 <code>GET /me</code>, 0001 §1 (navegação entre as 4 áreas).</div>
+    <ul>
+      <li><code>app/(app)/layout.tsx</code> — Server Component que busca <code>GET /me</code> e monta o shell autenticado (navegação para Categorias, Transações, Relatórios; botão logout).</li>
+      <li>Tela de conta exibindo <code>email</code>, <code>emailVerified</code>, <code>createdAt</code> (sem outros campos de perfil — 0002/0003). <strong>Sem</strong> exclusão de conta (fora de escopo — 0001 §4).</li>
+    </ul>
+    <div class="accept"><strong>Aceite:</strong> após login, o layout carrega <code>/me</code>; logout limpa cookies e volta ao login; <code>401</code> no <code>/me</code> aciona refresh/redirect da Fase 1.</div>
+  </section>
+
+  <!-- FASE 4 -->
+  <section class="block" id="fase4">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">4</span> Categorias (CRUD + arquivamento)</h2>
+    <div class="origem"><strong>Origem:</strong> 0003 §4, 0005 §2 (RN-Cat-1..5), 0006 (erros de categoria).</div>
+    <ul>
+      <li><strong>Leitura:</strong> Server Component lista <code>GET /categories</code> (só ativas por padrão); <code>includeArchived=true</code> apenas em tela de gestão/histórico (RN-Cat-4).</li>
+      <li><strong>Server Actions:</strong> criar (<code>POST</code>), renomear (<code>PATCH</code> <strong>só <code>name</code></strong> — <code>kind</code> imutável, RN-Cat-1), excluir (<code>DELETE</code>). Após mutação, <code>revalidatePath</code> da lista.</li>
+      <li>Nome 1..60; único por (usuário+tipo) entre ativas → tratar <code>CATEGORY_NAME_IN_USE</code> (409) no campo nome (RN-Cat-2).</li>
+      <li>Exclusão: a UI <strong>não sabe</strong> se arquivou ou apagou (ambos 204) → <strong>revalidar a lista</strong> depois (RN-Cat-3). Confirmar antes de excluir.</li>
+      <li>Não expor mudança de <code>kind</code> na edição. <strong>Não</strong> oferecer cor/ícone, subcategorias, reordenação (fora de escopo — 0001 §4).</li>
+      <li>Categorias padrão já vêm criadas no cadastro (RN-Cat-5) — não recriá-las.</li>
+    </ul>
+    <div class="accept"><strong>Aceite:</strong> criar/renomear/excluir refletem na lista; nome duplicado mostra erro no campo; após excluir categoria com transações, ela some da lista ativa mas aparece com <code>includeArchived=true</code>.</div>
+  </section>
+
+  <!-- FASE 5 -->
+  <section class="block" id="fase5">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">5</span> Transações (CRUD, filtros, paginação por cursor)</h2>
+    <div class="origem"><strong>Origem:</strong> 0003 §5, 0005 §3 (RN-Tx-1..8), 0002 (Transaction/TransactionPage), 0006.</div>
+    <ul>
+      <li><strong>Leitura:</strong> Server Component carrega a 1ª página de <code>GET /transactions</code> (default <code>limit=20</code>, ordem <code>occurredAt</code> desc). Filtros opcionais: <code>from</code>/<code>to</code>, <code>categoryId</code>, <code>kind</code>.</li>
+      <li><strong>"Carregar mais" por cursor (RN-Tx-8):</strong> client component que reenvia <strong>a mesma query</strong> + <code>cursor=nextCursor</code>; para quando <code>nextCursor === null</code>. <strong>Sem offset, sem <code>total</code>.</strong> Filtros não mudam dentro de uma sequência.</li>
+      <li><strong>Server Actions:</strong> criar (<code>POST</code>), editar (<code>PATCH</code> parcial — <code>description:null</code> limpa), excluir (<code>DELETE</code>, <strong>hard delete</strong>, confirmar antes — RN-Tx-7).</li>
+      <li>Categoria <strong>obrigatória, exatamente uma</strong> (RN-Tx-1); seletor só com categorias <strong>ativas</strong> do <strong>mesmo <code>kind</code></strong> (RN-Tx-2/3/4) — filtrar por <code>kind</code>.</li>
+      <li><code>amountCents</code> inteiro <strong>&gt; 0</strong>, convertido de input BRL (RN-Tx-4 / <code>lib/money.ts</code>); o sinal vem do <code>kind</code>. Tratar <code>INVALID_AMOUNT</code> (400) e <code>VALIDATION_ERROR</code>.</li>
+      <li>Datas futuras permitidas em <code>occurredAt</code> (RN-Tx-5) — não bloquear.</li>
+      <li>Editar <code>kind</code> exige categoria compatível com o novo tipo (RN-Tx-6); manter vínculo a categoria arquivada <strong>depois</strong> é válido (não forçar troca).</li>
+      <li>Tratar <code>CATEGORY_ARCHIVED</code> (409), <code>CATEGORY_KIND_MISMATCH</code> (409), <code>CATEGORY_NOT_FOUND</code> (404) revalidando/filtrando o seletor.</li>
+      <li><strong>Sem</strong> busca textual por descrição (fora de escopo — 0001 §4 / 0005 §3).</li>
+    </ul>
+    <div class="accept"><strong>Aceite:</strong> criar despesa e receita com seletor filtrado por tipo; "carregar mais" pagina por cursor até <code>null</code>; editar limpando descrição; excluir com confirmação; erros de categoria/valor mostrados no campo correto.</div>
+  </section>
+
+  <!-- FASE 6 -->
+  <section class="block" id="fase6">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">6</span> Relatórios (resumo do período)</h2>
+    <div class="origem"><strong>Origem:</strong> 0003 §6, 0002 (Summary), 0005 §4 (RN-Rep-1..5), 0006.</div>
+    <ul>
+      <li>Server Component chama <code>GET /reports/summary</code> com <code>from</code>/<code>to</code> (omitidos ⇒ mês corrente, RN-Rep-2). Período <strong>inclusivo</strong>; <code>from &gt; to</code> ⇒ <code>VALIDATION_ERROR</code> (mostrar correção).</li>
+      <li>Exibir <code>totals</code> (income/expense/balance/count); <strong><code>balanceCents</code> pode ser negativo</strong> (saldo no vermelho é válido — RN-Rep-1).</li>
+      <li><code>byCategory</code>: lista única; o frontend <strong>separa despesa/receita pelo <code>kind</code></strong> ao exibir; itens com <code>archived:true</code> (categoria arquivada com histórico no período) <strong>devem ser exibidos</strong>, marcados como arquivados (RN-Rep-3).</li>
+      <li><strong>Percentual por categoria é cálculo do cliente</strong> a partir de <code>totalCents</code> / total do tipo (RN-Rep-4). <strong>Não</strong> baixar todas as transações para somar — usar só o resumo (RN-Rep-5).</li>
+      <li><strong>Sem</strong> export e <strong>sem</strong> timeline mês a mês (fora de escopo — 0001 §4).</li>
+    </ul>
+    <div class="accept"><strong>Aceite:</strong> resumo do mês corrente por default; troca de período funciona e valida <code>from&gt;to</code>; categoria arquivada com histórico aparece marcada; percentuais batem com os totais.</div>
+  </section>
+
+  <!-- FASE 7 -->
+  <section class="block" id="fase7">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">7</span> Endurecimento e checklist final</h2>
+    <div class="origem"><strong>Origem:</strong> 0001 §3 (princípios), 0006 §3 (estratégia), produção.</div>
+    <ul>
+      <li>Revisar todos os pontos "fora de escopo" (0001 §4) — garantir que a UI <strong>não</strong> oferece recorrência, orçamentos, multi-carteira, import, multi-moeda, anexos, OAuth/MFA, exclusão de conta, subcategorias, etc.</li>
+      <li>Conferir reação a <strong>todos</strong> os <code>code</code> do catálogo 0006 §2 (incluindo <code>429</code> e <code>5xx</code>).</li>
+      <li>Garantir isolamento por usuário: frontend nunca envia <code>userId</code> (P2 / RN-Iso-1).</li>
+      <li>Conferir <code>server-only</code> nos módulos que tocam tokens/<code>API_BASE_URL</code> (guia <code>02-guides/data-security.md</code>); nenhum segredo vaza para bundle client.</li>
+      <li>Atualizar <code>README.md</code> (rodar em <code>APP_URL</code> do backend p/ CORS — 0001 §2; setar <code>API_BASE_URL</code>).</li>
+    </ul>
+    <div class="accept"><strong>Aceite:</strong> build de produção limpo; nenhuma feature fora de escopo exposta; tokens nunca aparecem em código client-side.</div>
+  </section>
+
+  <!-- ARQUIVOS -->
+  <section class="block" id="arquivos">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">★</span> Arquivos críticos &amp; padrões reutilizáveis</h2>
+    <h3>Arquivos a criar (resumo)</h3>
+    <table>
+      <tr><th>Camada</th><th>Arquivos</th></tr>
+      <tr><td>Fundação</td><td><code>lib/api/types.ts</code>, <code>lib/config.ts</code>, <code>lib/money.ts</code>, <code>lib/date.ts</code></td></tr>
+      <tr><td>Rede / sessão</td><td><code>lib/api/client.ts</code>, <code>lib/api/error-messages.ts</code>, <code>lib/auth/session.ts</code></td></tr>
+      <tr><td>Auth</td><td><code>lib/auth/actions.ts</code>, <code>app/(auth)/{login,register,forgot-password}/</code>, <code>app/verify-email/</code>, <code>app/reset-password/</code>, <code>app/(app)/account/change-password/</code></td></tr>
+      <tr><td>Shell</td><td><code>app/(app)/layout.tsx</code>, middleware de proteção de rota</td></tr>
+      <tr><td>Features</td><td><code>app/(app)/categories/</code>, <code>app/(app)/transactions/</code>, <code>app/(app)/reports/</code> (cada uma com seus Server Actions e components)</td></tr>
+    </table>
+    <h3>Padrões — definir uma vez, repetir</h3>
+    <ul>
+      <li><strong>Toda leitura <span class="tag lock">🔒</span></strong> = Server Component chamando <code>lib/api/client.ts</code>.</li>
+      <li><strong>Toda mutação <span class="tag lock">🔒</span></strong> = Server Action → <code>client</code> → <code>revalidatePath/Tag</code> da tela afetada.</li>
+      <li><strong>Todo erro</strong> = <code>ApiError.code</code> → mensagem PT-BR de <code>error-messages.ts</code>; <code>details</code> marca campos em <code>VALIDATION_ERROR</code>.</li>
+      <li><strong>Todo dinheiro</strong> = centavos inteiros internamente; <code>formatBRL</code>/<code>parseBRLToCents</code> nas bordas.</li>
+    </ul>
+  </section>
+
+  <!-- VERIFICACAO -->
+  <section class="block" id="verificacao">
+    <a class="back" href="#contexto">topo ↑</a>
+    <h2><span class="phase-num">✓</span> Verificação end-to-end</h2>
+    <ol class="steps">
+      <li>Subir o backend Fluxy local em <code>http://localhost:3333</code> e o frontend em <code>APP_URL</code> (default <code>http://localhost:3000</code>) para satisfazer CORS (0001 §2).</li>
+      <li><code>npm run dev</code> e percorrer manualmente: cadastro → <code>/verify-email?token=</code> → login → criar categoria → criar transações (despesa/receita) → "carregar mais" → relatório do mês → editar/excluir → change-password (desloga) → forgot/<code>/reset-password?token=</code>.</li>
+      <li>Conferir no navegador que <strong>nenhum</strong> token aparece em storage/JS client (estão em cookies httpOnly) e que chamadas com access expirado se renovam sozinhas.</li>
+      <li><code>npm run build</code> + <code>npm run lint</code> sem erros. Opcional: smoke test com Playwright (<code>02-guides/testing/playwright.md</code>) cobrindo login + criar transação.</li>
+    </ol>
+  </section>
+
+  <footer>
+    Fluxy · Roteiro SDD do Frontend · derivado de <code>front-specs/0001…0006</code> · gerado em 2026-06-22
+  </footer>
+
+</div>
+</body>
+</html>
