@@ -14,6 +14,8 @@ const MESSAGES: Record<string, string> = {
   CONFLICT: "Há um conflito com o estado atual dos dados.",
   INTERNAL_SERVER_ERROR: "Algo deu errado. Tente novamente em instantes.",
   RATE_LIMITED: "Muitas tentativas. Aguarde um momento e tente de novo.",
+  NETWORK_ERROR:
+    "Não foi possível conectar ao servidor. Verifique se a API está no ar e tente novamente.",
 
   // Autenticação
   INVALID_CREDENTIALS: "E-mail ou senha incorretos.",

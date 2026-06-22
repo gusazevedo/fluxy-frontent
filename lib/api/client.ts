@@ -71,19 +71,26 @@ export async function apiFetch<T>(
   const useAuth = opts.auth !== false;
   let accessToken = useAuth ? await getAccessToken() : undefined;
 
-  let res = await doFetch(path, opts, accessToken);
+  let res: Response;
+  try {
+    res = await doFetch(path, opts, accessToken);
 
-  // Interceptor 401: uma tentativa de refresh rotacionado + retry.
-  if (
-    res.status === 401 &&
-    useAuth &&
-    opts.retryOnAuth !== false
-  ) {
-    const tokens = await refreshSession();
-    if (tokens) {
-      accessToken = tokens.accessToken;
-      res = await doFetch(path, { ...opts, retryOnAuth: false }, accessToken);
+    // Interceptor 401: uma tentativa de refresh rotacionado + retry.
+    if (res.status === 401 && useAuth && opts.retryOnAuth !== false) {
+      const tokens = await refreshSession();
+      if (tokens) {
+        accessToken = tokens.accessToken;
+        res = await doFetch(path, { ...opts, retryOnAuth: false }, accessToken);
+      }
     }
+  } catch (cause) {
+    // Falha de rede (ex.: API fora do ar / ECONNREFUSED). Transitória —
+    // vira ApiError tratável, não um 500 (0006 §3.4).
+    throw new ApiError(
+      "NETWORK_ERROR",
+      0,
+      cause instanceof Error ? cause.message : "Network request failed",
+    );
   }
 
   if (!res.ok) {
